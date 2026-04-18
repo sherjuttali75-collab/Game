@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe by Alisher</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #111118;
+    --x-color: #00f5ff;
+    --o-color: #ff2d78;
+    --grid-line: #1e1e2e;
+    --text: #e0e0ff;
+    --glow-x: 0 0 20px #00f5ff88, 0 0 40px #00f5ff44;
+    --glow-o: 0 0 20px #ff2d7888, 0 0 40px #ff2d7844;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes gridMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(40px); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  /* Title */
+  .title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, var(--x-color), var(--o-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 10px rgba(0,245,255,0.4));
+    animation: titlePulse 3s ease-in-out infinite;
+  }
+
+  @keyframes titlePulse {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(0,245,255,0.4)); }
+    50% { filter: drop-shadow(0 0 20px rgba(255,45,120,0.6)); }
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    color: #444466;
+    text-transform: uppercase;
+    margin-top: -16px;
+  }
+
+  /* Scoreboard */
+  .scoreboard { display: flex; gap: 16px; align-items: center; }
+
+  .score-card {
+    background: var(--panel);
+    border: 1px solid #1e1e2e;
+    border-radius: 12px;
+    padding: 12px 24px;
+    text-align: center;
+    min-width: 90px;
+    transition: all 0.3s;
+  }
+  .score-card.x-card { border-color: #00f5ff33; }
+  .score-card.o-card { border-color: #ff2d7833; }
+  .score-card.active-x { border-color: var(--x-color); box-shadow: var(--glow-x); }
+  .score-card.active-o { border-color: var(--o-color); box-shadow: var(--glow-o); }
+
+  .score-label { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 700; }
+  .score-label.x { color: var(--x-color); }
+  .score-label.o { color: var(--o-color); }
+  .score-value { font-family: 'Orbitron', monospace; font-size: 1.8rem; font-weight: 900; color: var(--text); }
+  .vs-text { font-family: 'Orbitron', monospace; font-size: 0.8rem; color: #333355; letter-spacing: 2px; }
+
+  /* Status */
+  .status {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(0.75rem, 3vw, 0.9rem);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    height: 28px;
+    transition: all 0.3s;
+    text-align: center;
+  }
+  .status.x-turn { color: var(--x-color); text-shadow: var(--glow-x); }
+  .status.o-turn { color: var(--o-color); text-shadow: var(--glow-o); }
+  .status.winner-x { color: var(--x-color); text-shadow: var(--glow-x); animation: winPulse 0.5s ease infinite alternate; }
+  .status.winner-o { color: var(--o-color); text-shadow: var(--glow-o); animation: winPulse 0.5s ease infinite alternate; }
+  .status.draw { color: #888899; }
+
+  @keyframes winPulse { from { opacity:1; } to { opacity:0.5; } }
+
+  /* Board */
+  .board-wrapper {
+    position: relative;
+    padding: 3px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #00f5ff22, #ff2d7822);
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    background: #0d0d15;
+    border-radius: 16px;
+    overflow: hidden;
+    width: min(340px, 90vw);
+    height: min(340px, 90vw);
+  }
+
+  .cell {
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2.5rem, 10vw, 4rem);
+    font-weight: 900;
+    transition: background 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .cell:hover:not(.taken) { background: #151525; }
+  .cell:active:not(.taken) { transform: scale(0.95); }
+
+  .cell.x-cell { color: var(--x-color); text-shadow: var(--glow-x); background: #001a1f; animation: cellPop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .cell.o-cell { color: var(--o-color); text-shadow: var(--glow-o); background: #1a0010; animation: cellPop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .cell.winning { animation: winCell 0.4s ease forwards; }
+  .cell.x-cell.winning { background: #003040; }
+  .cell.o-cell.winning { background: #300020; }
+
+  @keyframes cellPop { 0% { transform:scale(0.5); opacity:0; } 100% { transform:scale(1); opacity:1; } }
+  @keyframes winCell { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); } }
+
+  /* Mode selector */
+  .mode-selector {
+    display: flex; gap: 8px;
+    background: var(--panel);
+    border: 1px solid #1e1e2e;
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .mode-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+    padding: 6px 16px; border-radius: 7px; border: none; cursor: pointer; transition: all 0.2s;
+    background: transparent; color: #444466;
+  }
+  .mode-btn.active { background: #1e1e2e; color: var(--text); }
+
+  /* Game buttons */
+  .btn-row { display: flex; gap: 12px; }
+
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+    padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
+    transition: all 0.2s; font-weight: 700;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--x-color), #0088aa); color: #000; box-shadow: 0 0 15px #00f5ff44; }
+  .btn-primary:hover { box-shadow: 0 0 25px #00f5ff88; transform: translateY(-2px); }
+  .btn-secondary { background: transparent; color: #444466; border: 1px solid #222233; }
+  .btn-secondary:hover { color: var(--text); border-color: #444466; transform: translateY(-2px); }
+
+  /* ─────────────────────────────
+     CREATOR CARD (marketing strip)
+  ───────────────────────────── */
+  .creator-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid #1e1e2e;
+    border-radius: 16px;
+    padding: 18px 28px;
+    width: min(400px, 92vw);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* subtle top accent line */
+  .creator-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--x-color), var(--o-color));
+  }
+
+  .creator-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .creator-name {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #fff 40%, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .creator-rank {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #444466;
+  }
+
+  .creator-rank span {
+    color: var(--x-color);
+    font-weight: 600;
+  }
+
+  /* contact buttons row */
+  .contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .contact-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-decoration: none;
+    border: 1px solid #1e1e2e;
+    background: #0d0d15;
+    color: #888899;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .contact-btn svg { flex-shrink: 0; }
+
+  .contact-btn:hover { transform: translateY(-2px); }
+
+  .contact-btn.wa:hover  { border-color: #25d366; color: #25d366; box-shadow: 0 0 12px #25d36633; }
+  .contact-btn.gm:hover  { border-color: #ea4335; color: #ea4335; box-shadow: 0 0 12px #ea433533; }
+  .contact-btn.li:hover  { border-color: #0a66c2; color: #0a66c2; box-shadow: 0 0 12px #0a66c233; }
+  .contact-btn.gh:hover  { border-color: #c9d1d9; color: #c9d1d9; box-shadow: 0 0 12px #c9d1d933; }
+
+  /* Win popup */
+  .popup-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s; backdrop-filter: blur(6px);
+  }
+  .popup-overlay.show { opacity: 1; pointer-events: all; }
+
+  .popup {
+    background: var(--panel); border-radius: 20px;
+    padding: 36px 40px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    transform: scale(0.8);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    border: 1px solid #1e1e2e; min-width: 260px;
+  }
+  .popup-overlay.show .popup { transform: scale(1); }
+  .popup-emoji { font-size: 3rem; }
+  .popup-title { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; }
+  .popup-title.x-win { color: var(--x-color); text-shadow: var(--glow-x); }
+  .popup-title.o-win { color: var(--o-color); text-shadow: var(--glow-o); }
+  .popup-title.draw  { color: #888899; }
+  .popup-sub { font-size: 0.85rem; color: #555577; letter-spacing: 2px; text-transform: uppercase; }
+  .popup-btns { display: flex; gap: 10px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div>
+    <div class="title">Tic-Tac-Toe</div>
+    <div class="subtitle">by Alisher</div>
+  </div>
+
+  <div class="mode-selector">
+    <button class="mode-btn active" id="pvpBtn" onclick="setMode('pvp')">2 Players</button>
+    <button class="mode-btn" id="aiBtn" onclick="setMode('ai')">vs AI</button>
+  </div>
+
+  <div class="scoreboard">
+    <div class="score-card x-card active-x" id="xCard">
+      <div class="score-label x">X</div>
+      <div class="score-value" id="xScore">0</div>
+    </div>
+    <div class="vs-text">VS</div>
+    <div class="score-card o-card" id="oCard">
+      <div class="score-label o">O</div>
+      <div class="score-value" id="oScore">0</div>
+    </div>
+  </div>
+
+  <div class="status x-turn" id="status">Player X — Your Turn</div>
+
+  <div class="board-wrapper">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="resetGame()">↺ Restart</button>
+    <button class="btn btn-secondary" onclick="resetScore()">Reset Score</button>
+  </div>
+
+  <!-- ── CREATOR / MARKETING CARD ── -->
+  <div class="creator-card">
+    <div class="creator-info">
+      <div class="creator-name">Ali Sher</div>
+      <div class="creator-rank">BS Software Engineering &nbsp;·&nbsp; <span>USKT, Sialkot</span></div>
+    </div>
+    <div class="contact-row">
+      <a href="https://wa.me/923417636276" target="_blank" class="contact-btn wa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </a>
+      <a href="mailto:sherjuttali75@gmail.com" class="contact-btn gm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 010 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.055C21.69 2.28 24 3.434 24 5.457z"/></svg>
+        Gmail
+      </a>
+      <a href="https://www.linkedin.com/in/ali-sher-017725402" target="_blank" class="contact-btn li">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+      <a href="https://github.com/sherjuttali75-collab" target="_blank" class="contact-btn gh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Win/Draw Popup -->
+<div class="popup-overlay" id="popup">
+  <div class="popup">
+    <div class="popup-emoji" id="popupEmoji">🏆</div>
+    <div class="popup-title" id="popupTitle">Player X Wins!</div>
+    <div class="popup-sub" id="popupSub">Well played</div>
+    <div class="popup-btns">
+      <button class="btn btn-primary" onclick="closePopupAndRestart()">↺ Play Again</button>
+      <button class="btn btn-secondary" onclick="closePopup()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let board = Array(9).fill('');
+  let currentPlayer = 'X';
+  let gameOver = false;
+  let scores = { X: 0, O: 0 };
+  let mode = 'pvp';
+
+  const winCombos = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('pvpBtn').classList.toggle('active', m === 'pvp');
+    document.getElementById('aiBtn').classList.toggle('active', m === 'ai');
+    resetGame();
+  }
+
+  function renderBoard() {
+    const boardEl = document.getElementById('board');
+    boardEl.innerHTML = '';
+    board.forEach((val, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (val ? ` ${val.toLowerCase()}-cell taken` : '');
+      cell.textContent = val;
+      cell.onclick = () => handleClick(i);
+      boardEl.appendChild(cell);
+    });
+  }
+
+  function handleClick(i) {
+    if (board[i] || gameOver) return;
+    if (mode === 'ai' && currentPlayer === 'O') return;
+    makeMove(i);
+    if (mode === 'ai' && !gameOver) setTimeout(aiMove, 400);
+  }
+
+  function makeMove(i) {
+    board[i] = currentPlayer;
+    renderBoard();
+    const winner = checkWinner();
+    if (winner) {
+      highlightWin(winner.combo);
+      scores[currentPlayer]++;
+      updateScore();
+      setStatus(`Player ${currentPlayer} Wins! 🏆`, `winner-${currentPlayer.toLowerCase()}`);
+      gameOver = true;
+      showPopup(currentPlayer.toLowerCase());
+    } else if (board.every(v => v)) {
+      setStatus("It's a Draw!", 'draw');
+      gameOver = true;
+      showPopup('draw');
+    } else {
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      updateTurnUI();
+    }
+  }
+
+  function aiMove() { makeMove(getBestMove()); }
+
+  function getBestMove() {
+    for (let i = 0; i < 9; i++) {
+      if (!board[i]) { board[i]='O'; if(checkWinner()){board[i]='';return i;} board[i]=''; }
+    }
+    for (let i = 0; i < 9; i++) {
+      if (!board[i]) { board[i]='X'; if(checkWinner()){board[i]='';return i;} board[i]=''; }
+    }
+    if (!board[4]) return 4;
+    const corners = [0,2,6,8].filter(i => !board[i]);
+    if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+    const available = board.map((v,i) => v ? null : i).filter(v => v !== null);
+    return available[Math.floor(Math.random() * available.length)];
+  }
+
+  function checkWinner() {
+    for (const combo of winCombos) {
+      const [a,b,c] = combo;
+      if (board[a] && board[a]===board[b] && board[b]===board[c]) return { player: board[a], combo };
+    }
+    return null;
+  }
+
+  function highlightWin(combo) {
+    const cells = document.querySelectorAll('.cell');
+    combo.forEach(i => cells[i].classList.add('winning'));
+  }
+
+  function updateTurnUI() {
+    const isX = currentPlayer === 'X';
+    const label = mode === 'ai' && currentPlayer === 'O' ? 'AI' : `Player ${currentPlayer}`;
+    setStatus(`${label} — Your Turn`, isX ? 'x-turn' : 'o-turn');
+    document.getElementById('xCard').className = `score-card x-card${isX ? ' active-x' : ''}`;
+    document.getElementById('oCard').className = `score-card o-card${!isX ? ' active-o' : ''}`;
+  }
+
+  function setStatus(msg, cls) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = `status ${cls}`;
+  }
+
+  function updateScore() {
+    document.getElementById('xScore').textContent = scores.X;
+    document.getElementById('oScore').textContent = scores.O;
+  }
+
+  function showPopup(type) {
+    const emoji = { x:'🏆', o:'🏆', draw:'🤝' };
+    const title = { x:'Player X Wins!', o: mode==='ai' ? 'AI Wins!' : 'Player O Wins!', draw:"It's a Draw!" };
+    const sub   = { x:'Excellent move!', o: mode==='ai' ? 'Better luck next time!' : 'Well played!', draw:'Neck and neck!' };
+    const cls   = { x:'x-win', o:'o-win', draw:'draw' };
+    document.getElementById('popupEmoji').textContent = emoji[type];
+    document.getElementById('popupTitle').textContent = title[type];
+    document.getElementById('popupTitle').className = `popup-title ${cls[type]}`;
+    document.getElementById('popupSub').textContent = sub[type];
+    setTimeout(() => document.getElementById('popup').classList.add('show'), 600);
+  }
+
+  function closePopup() { document.getElementById('popup').classList.remove('show'); }
+  function closePopupAndRestart() { closePopup(); setTimeout(resetGame, 200); }
+
+  function resetGame() {
+    board = Array(9).fill('');
+    currentPlayer = 'X';
+    gameOver = false;
+    closePopup();
+    renderBoard();
+    updateTurnUI();
+  }
+
+  function resetScore() { scores = {X:0, O:0}; updateScore(); resetGame(); }
+
+  renderBoard();
+  updateTurnUI();
+</script>
+</body>
+</html>
